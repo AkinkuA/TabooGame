@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Taboo Game</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+      }
+
+      h1 {
+        background-color: #007bff;
+        color: white;
+        margin: 0;
+        padding: 20px 0;
+      }
+
+      #setup, #gameArea {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: white;
+        width: 60%;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #scoreboard {
+        font-size: 20px;
+        margin-top: 20px;
+      }
+
+      #teamDisplay {
+        font-size: 22px;
+        margin-top: 20px;
+        font-weight: bold;
+      }
+
+      #tabooWords {
+        margin-top: 10px;
+        font-size: 18px;
+        color: #555;
+      }
+
+      #timerDisplay {
+        margin-top: 10px;
+        font-size: 20px;
+        color: #007bff;
+      }
+
+    </style>
+</head>
+<body>
+    <h1>Baby it's cold outside Taboo Game</h1>
+
+    <div id="setup">
+        <input type="number" id="numTeams" placeholder="Number of Teams">
+        <input type="number" id="timerLength" placeholder="Timer Length (seconds)">
+        <button onclick="initializeGame()">Start Game</button>
+    </div>
+
+    <div id="gameArea" style="display:none;">
+    <div id="wordDisplay">Word: <span id="currentWord"></span></div>
+    <div id="tabooWords">Taboo Words: </div>
+    <div id="timerDisplay">Time Left: <span id="timeLeft"></span></div>
+    <button onclick="correctAnswer()">Correct</button>
+    <button onclick="incorrectAnswer()">Incorrect</button>
+    <button onclick="nextWord()">Skip Word</button>
+
+    <div id="teamDisplay"></div>
+    <div id="scoreboard"></div>
+</div>
+
+    <script>
+      let teams = [];
+      let currentTeam = 0;
+      let timerLength;
+      let timerInterval;
+
+      let words = [
+        { word: "Snowflake", taboo: ["Crystal", "Weather", "White", "Cold", "Unique"] },
+        { word: "Diaper", taboo: ["Baby", "Change", "Pampers", "Wet", "Wear"] },
+        { word: "Icicle", taboo: ["Drip", "Cold", "Hang", "Winter", "Sharp"] },
+        { word: "Stroller", taboo: ["Push", "Baby", "Walk", "Wheels", "Carriage"] },
+        { word: "Mittens", taboo: ["Hands", "Warm", "Knit", "Winter", "Wear"] },
+        { word: "Crib", taboo: ["Baby", "Sleep", "Bed", "Nursery", "Furniture"] },
+        { word: "Hot Cocoa", taboo: ["Drink", "Chocolate", "Warm", "Winter", "Marshmallow"] },
+        { word: "Ultrasound", taboo: ["Baby", "Picture", "Scan", "Doctor", "Womb"] },
+        { word: "Frostbite", taboo: ["Cold", "Winter", "Skin", "Freeze", "Damage"] },
+        { word: "Pacifier", taboo: ["Soothe", "Suck", "Baby", "Mouth", "Silicone"] },
+        { word: "Blizzard", taboo: ["Snow", "Storm", "Winter", "Wind", "Cold"] },
+        { word: "Bottle", taboo: ["Feed", "Milk", "Baby", "Drink", "Nipple"] },
+        { word: "Chimney", taboo: ["Santa", "Roof", "Fire", "Smoke", "House"] },
+        { word: "Lullaby", taboo: ["Song", "Sleep", "Sing", "Baby", "Night"] },
+        { word: "Igloo", taboo: ["Snow", "Eskimo", "Cold", "Dome", "House"] },
+        { word: "Booties", taboo: ["Baby", "Feet", "Wear", "Shoes", "Soft"] },
+        { word: "Snowman", taboo: ["Carrot", "Snow", "Cold", "Winter", "Roll"] },
+        { word: "Nursery", taboo: ["Baby", "Room", "Crib", "Decorate", "Sleep"] },
+        { word: "Breastfeed", taboo: ["Mother", "Milk", "Baby", "Nurse", "Eat"] },
+        { word: "Hibernate", taboo: ["Sleep", "Winter", "Bear", "Long", "Season"] },
+        { word: "Rattle", taboo: ["Toy", "Shake", "Sound", "Baby", "Play"] },
+        { word: "Sleigh", taboo: ["Ride", "Snow", "Horses", "Santa", "Bell"] },
+        { word: "Onesie", taboo: ["Baby", "Wear", "Clothes", "Snap", "Outfit"] },
+        { word: "Snowball", taboo: ["Throw", "Cold", "Snow", "Round", "Fight"] },
+        { word: "Car Seat", taboo: ["Baby", "Travel", "Vehicle", "Safety", "Buckle"] },
+        { word: "Fireplace", taboo: ["Warm", "Fire", "Wood", "Hearth", "Winter"] },
+        { word: "Teething", taboo: ["Baby", "Pain", "Gums", "Chew", "Teeth"] },
+        { word: "North Pole", taboo: ["Santa", "Cold", "Earth", "Arctic", "Elves"] },
+        { word: "Bassinet", taboo: ["Baby", "Sleep", "Small", "Bed", "Portable"] },
+        { word: "Frosting", taboo: ["Cake", "Sweet", "Icing", "Spread", "Decorate"] },
+        { word: "Bib", taboo: ["Eat", "Drool", "Cloth", "Neck", "Messy"] },
+        { word: "Crawling", taboo: ["Baby", "Move", "Hands", "Knees", "Floor"] },
+        { word: "Layette", taboo: ["Baby", "Clothes", "Set", "Newborn", "Outfit"] },
+        { word: "Mobile", taboo: ["Crib", "Hang", "Music", "Spin", "Toy"] },
+        { word: "Naptime", taboo: ["Sleep", "Baby", "Afternoon", "Quiet", "Rest"] },
+        { word: "Playpen", taboo: ["Baby", "Enclosed", "Play", "Safe", "Space"] },
+        { word: "Swaddle", taboo: ["Wrap", "Baby", "Blanket", "Snug", "Cloth"] },
+        { word: "Toddler", taboo: ["Young", "Walk", "Baby", "Child", "Age"] },
+        { word: "Wipes", taboo: ["Clean", "Baby", "Diaper", "Wet", "Use"] },
+        { word: "Bathtub", taboo: ["Water", "Baby", "Clean", "Wash", "Soap"] },
+        { word: "Highchair", taboo: ["Baby", "Eat", "Sit", "Food", "Tray"] },
+        { word: "Co-sleeping", taboo: ["Bed", "Share", "Baby", "Sleep", "Parent"] },
+        { word: "Drool", taboo: ["Saliva", "Baby", "Wet", "Mouth", "Chin"] },
+        { word: "Formula", taboo: ["Feed", "Baby", "Milk", "Bottle", "Powder"] },
+        { word: "Giggles", taboo: ["Laugh", "Baby", "Sound", "Happy", "Joy"] },
+        { word: "Hiccups", taboo: ["Baby", "Sound", "Diaphragm", "Frequent", "Cute"] },
+        { word: "Milestone", taboo: ["Baby", "Development", "First", "Age", "Achieve"] },
+        { word: "Nursing", taboo: ["Breastfeed", "Baby", "Feed", "Mother", "Milk"] },
+        { word: "Overalls", taboo: ["Clothes", "Baby", "Straps", "Denim", "Wear"] },
+        { word: "Potty", taboo: ["Training", "Toilet", "Baby", "Toddler", "Use"] },
+        { word: "Quilt", taboo: ["Blanket", "Baby", "Bed", "Warm", "Sew"] },
+        { word: "Rocking", taboo: ["Chair", "Baby", "Motion", "Back", "Forth"] },
+        { word: "Sippy Cup", taboo: ["Drink", "Baby", "Spill", "Lid", "Handle"] },
+        { word: "Teether", taboo: ["Chew", "Baby", "Gums", "Relief", "Toy"] },
+        { word: "Umbilical Cord", taboo: ["Baby", "Belly", "Birth", "Cut", "Navel"] },
+        { word: "Vaccinations", taboo: ["Shots", "Doctor", "Baby", "Health", "Immune"] },
+        { word: "Waddle", taboo: ["Walk", "Pregnancy", "Duck", "Movement", "Belly"] },
+        { word: "Xylophone", taboo: ["Music", "Toy", "Baby", "Instrument", "Colorful"] },
+        { word: "Yawning", taboo: ["Tired", "Baby", "Mouth", "Sleepy", "Open"] },
+        { word: "Zzz", taboo: ["Sleep", "Baby", "Sound", "Nap", "Quiet"] },
+      ];
+      let currentWordIndex = 0;
+
+      function initializeGame() {
+        let numTeams = document.getElementById("numTeams").value;
+        numTeams = parseInt(numTeams);
+
+        if (isNaN(numTeams) || numTeams < 2) {
+            alert("Please enter a valid number of teams (at least 2).");
+            return;
+        }
+
+        timerLength = parseInt(document.getElementById("timerLength").value);
+        if (isNaN(timerLength) || timerLength <= 0) {
+            alert("Please enter a valid timer length in seconds.");
+            return;
+        }
+
+
+        for (let i = 0; i < numTeams; i++) {
+            teams.push({ name: "Team " + (i + 1), score: 0 });
+        }
+
+        document.getElementById("setup").style.display = "none";
+        document.getElementById("gameArea").style.display = "block";
+
+        nextWord();
+        updateScoreboard();
+        updateCurrentTeamDisplay();
+
+      }
+
+      function nextWord() {
+      if (currentWordIndex >= words.length) {
+          alert("Game Over!");
+          // You can add more end-of-game logic here
+          return;
+      }
+
+      let wordObj = words[currentWordIndex];
+      document.getElementById("currentWord").textContent = wordObj.word;
+      displayTabooWords(wordObj.taboo);
+
+      currentWordIndex++;
+      currentTeam = (currentTeam + 1) % teams.length;
+
+       updateCurrentTeamDisplay();
+       startTimer();
+      }
+
+      function startTimer() {
+        let timeLeft = timerLength;
+        document.getElementById("timeLeft").textContent = timeLeft;
+        clearInterval(timerInterval); // Clear existing interval
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timeLeft").textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timesUp();
+            }
+        }, 1000);
+      }
+
+      function timesUp() {
+          alert("Time's up!");
+          incorrectAnswer(); // Or any other logic you want to execute when the time is up
+      }
+
+      function displayTabooWords(tabooWords) {
+        let tabooContainer = document.getElementById("tabooWords");
+        tabooContainer.innerHTML = ""; // Clear previous taboo words
+        tabooWords.forEach(word => {
+            let wordElem = document.createElement("span");
+            wordElem.textContent = word + ", ";
+            tabooContainer.appendChild(wordElem);
+        });
+      }
+
+      function updateScoreboard() {
+        let scoreboard = document.getElementById("scoreboard");
+        scoreboard.innerHTML = "<h3>Scoreboard</h3>";
+
+        teams.forEach((team, index) => {
+            let scoreLine = document.createElement("div");
+            scoreLine.textContent = team.name + ": " + team.score;
+            scoreboard.appendChild(scoreLine);
+        });
+      }
+
+      function updateCurrentTeamDisplay() {
+        let teamDisplay = document.getElementById("teamDisplay");
+        teamDisplay.textContent = "Current Turn: " + teams[currentTeam].name;
+      }
+
+      function correctAnswer() {
+          teams[currentTeam].score++;
+          updateScoreboard();
+          nextWord();
+      }
+
+      function incorrectAnswer() {
+          // You can add penalty logic here if desired
+          nextWord();
+      }
+    </script>
+</body>
+</html>
